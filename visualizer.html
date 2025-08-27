@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CPU Scheduling Timeline</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f8f8f8;
+      padding: 20px;
+    }
+    .timeline {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .bar {
+      display: flex;
+    }
+    .slot {
+      width: 20px;
+      height: 20px;
+      margin: 1px;
+      background-color: #ccc;
+    }
+    .slot.run {
+      background-color: #4caf50;
+    }
+    .slot.wait {
+      background-color: #ffeb3b;
+    }
+    .slot.empty {
+      background-color: #eee;
+    }
+  </style>
+</head>
+<body>
+  <h1>CPU Scheduling Timeline</h1>
+  <div id="container"></div>
+
+  <script>
+    fetch("timeline.json")
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById("container");
+
+        data.processes.forEach(proc => {
+          const row = document.createElement("div");
+          row.className = "timeline";
+
+          const label = document.createElement("div");
+          label.textContent = proc.name;
+
+          const bar = document.createElement("div");
+          bar.className = "bar";
+
+          proc.timeline.forEach(char => {
+            const slot = document.createElement("div");
+            slot.classList.add("slot");
+            if (char === '*') slot.classList.add("run");
+            else if (char === '.') slot.classList.add("wait");
+            else slot.classList.add("empty");
+            bar.appendChild(slot);
+          });
+
+          row.appendChild(label);
+          row.appendChild(bar);
+          container.appendChild(row);
+        });
+      });
+  </script>
+</body>
+</html>
