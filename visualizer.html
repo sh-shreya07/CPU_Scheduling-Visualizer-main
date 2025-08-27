@@ -1,75 +1,334 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>CPU Scheduling Timeline</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sorting Algorithm Visualizer</title>
   <style>
-    body {
-      font-family: sans-serif;
-      background-color: #f8f8f8;
-      padding: 20px;
+    :root{
+      --bg:#0f1220; --card:#161a2b; --muted:#8a93b2; --text:#e8ecff; --accent:#5e9bff; --accent2:#7cf5ff; --warn:#ffcc66; --ok:#4ade80; --bad:#fb7185;
     }
-    .timeline {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    .bar {
-      display: flex;
-    }
-    .slot {
-      width: 20px;
-      height: 20px;
-      margin: 1px;
-      background-color: #ccc;
-    }
-    .slot.run {
-      background-color: #4caf50;
-    }
-    .slot.wait {
-      background-color: #ffeb3b;
-    }
-    .slot.empty {
-      background-color: #eee;
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial; background:linear-gradient(180deg,#0e111f,#0b0e1a); color:var(--text)}
+    .wrap{max-width:1100px;margin:24px auto;padding:16px}
+    header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+    .badge{font-size:12px;color:#a2abcf;background:#10142a;border:1px solid #22294f;padding:4px 8px;border-radius:999px}
+    .card{background:var(--card);border:1px solid #252b4d;border-radius:16px;box-shadow:0 6px 30px rgba(0,0,0,.35)}
+    .controls{display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr auto auto;gap:12px;padding:14px}
+    .controls label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+    .controls .group{padding:10px 12px;border:1px solid #262c4f;border-radius:12px;background:#12162a}
+    select, input[type="range"], input[type="number"]{width:100%}
+    select, input[type="number"]{background:#0f1430;color:var(--text);border:1px solid #2b3263;border-radius:10px;padding:8px 10px}
+    input[type="range"]{accent-color:var(--accent)}
+    .btn{background:linear-gradient(180deg,#3053ff,#1e3cff);border:none;color:white;padding:10px 14px;border-radius:12px;font-weight:600;cursor:pointer;box-shadow:0 8px 20px rgba(48,83,255,.35)}
+    .btn.secondary{background:#0f1430;color:#d6dcff;border:1px solid #2b3263;box-shadow:none}
+    .btn.warn{background:linear-gradient(180deg,#ff7a7a,#e94444)}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .viz{height:380px;display:flex;align-items:flex-end;gap:2px;padding:16px;border-top:1px dashed #283157;border-radius:0 0 16px 16px}
+    .bar{flex:1;background:linear-gradient(180deg,#6aa2ff,#407dff);border-radius:6px 6px 0 0;transition:height .12s linear, transform .12s linear, background .12s linear}
+    .bar.mark-a{background:linear-gradient(180deg,#ffd166,#ffb703)}
+    .bar.mark-b{background:linear-gradient(180deg,#7cf5ff,#39dbee)}
+    .bar.fixed{background:linear-gradient(180deg,#4ade80,#22c55e)}
+    .bar.pivot{background:linear-gradient(180deg,#fb7185,#ef4444)}
+    .panel{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:12px;border-top:1px solid #262c4f}
+    .stat{background:#12162a;border:1px solid #262c4f;border-radius:12px;padding:10px}
+    .stat .t{font-size:11px;color:var(--muted)}
+    .stat .v{font-weight:700;font-size:18px}
+    .legend{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--muted);padding:8px 14px}
+    .dot{width:14px;height:14px;border-radius:4px;display:inline-block}
+    .dot.a{background:linear-gradient(180deg,#ffd166,#ffb703)}
+    .dot.b{background:linear-gradient(180deg,#7cf5ff,#39dbee)}
+    .dot.p{background:linear-gradient(180deg,#fb7185,#ef4444)}
+    .dot.f{background:linear-gradient(180deg,#4ade80,#22c55e)}
+    footer{margin-top:14px;color:var(--muted);font-size:12px}
+    @media(max-width:900px){
+      .controls{grid-template-columns:1fr 1fr;}
+      .panel{grid-template-columns:repeat(2,1fr)}
     }
   </style>
 </head>
 <body>
-  <h1>CPU Scheduling Timeline</h1>
-  <div id="container"></div>
+  <div class="wrap">
+    <header>
+      <h1 style="margin:0;font-size:22px">Sorting Algorithm Visualizer</h1>
+      <span class="badge">Jan 2025 – May 2025 • HTML/CSS/JS</span>
+    </header>
+
+    <section class="card">
+      <div class="controls">
+        <div class="group">
+          <label for="algo">Algorithm</label>
+          <select id="algo">
+            <option value="bubble">Bubble Sort</option>
+            <option value="merge">Merge Sort</option>
+            <option value="quick">Quick Sort</option>
+            <option value="heap">Heap Sort</option>
+          </select>
+        </div>
+        <div class="group">
+          <label for="size">Array Size: <span id="sizeLbl">50</span></label>
+          <input id="size" type="range" min="5" max="150" value="50" />
+        </div>
+        <div class="group">
+          <label for="speed">Speed (ms/step): <span id="speedLbl">16</span></label>
+          <input id="speed" type="range" min="1" max="300" value="16" />
+        </div>
+        <div class="group">
+          <label for="minVal">Min/Max Value</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <input id="minVal" type="number" value="5" />
+            <input id="maxVal" type="number" value="300" />
+          </div>
+        </div>
+        <button id="gen" class="btn secondary">Generate Array</button>
+        <div style="display:flex;gap:8px">
+          <button id="start" class="btn">Start</button>
+          <button id="pause" class="btn secondary" disabled>Pause</button>
+          <button id="stop" class="btn warn" disabled>Stop</button>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span><span class="dot a"></span> Compare/Focus A</span>
+        <span><span class="dot b"></span> Compare/Focus B</span>
+        <span><span class="dot p"></span> Pivot</span>
+        <span><span class="dot f"></span> Placed/Sorted</span>
+      </div>
+
+      <div id="viz" class="viz"></div>
+
+      <div class="panel">
+        <div class="stat"><div class="t">Comparisons</div><div id="cmp" class="v">0</div></div>
+        <div class="stat"><div class="t">Swaps/Writes</div><div id="swp" class="v">0</div></div>
+        <div class="stat"><div class="t">Array Size</div><div id="asz" class="v">50</div></div>
+        <div class="stat"><div class="t">Time Complexity</div><div id="tcx" class="v">—</div></div>
+      </div>
+    </section>
+
+    <footer>
+      Built to visualize Bubble, Merge, Quick and Heap sort with real-time animation, speed control, and dynamic array generation. Use the Pause/Stop controls to explore behavior and time complexities.
+    </footer>
+  </div>
 
   <script>
-    fetch("timeline.json")
-      .then(res => res.json())
-      .then(data => {
-        const container = document.getElementById("container");
+    // ====== State ======
+    const viz = document.getElementById('viz');
+    const sizeEl = document.getElementById('size');
+    const speedEl = document.getElementById('speed');
+    const sizeLbl = document.getElementById('sizeLbl');
+    const speedLbl = document.getElementById('speedLbl');
+    const minValEl = document.getElementById('minVal');
+    const maxValEl = document.getElementById('maxVal');
+    const genBtn = document.getElementById('gen');
+    const startBtn = document.getElementById('start');
+    const pauseBtn = document.getElementById('pause');
+    const stopBtn = document.getElementById('stop');
+    const cmpEl = document.getElementById('cmp');
+    const swpEl = document.getElementById('swp');
+    const aszEl = document.getElementById('asz');
+    const tcxEl = document.getElementById('tcx');
 
-        data.processes.forEach(proc => {
-          const row = document.createElement("div");
-          row.className = "timeline";
+    let arr = [];
+    let bars = [];
+    let running = false;
+    let paused = false;
+    let stopFlag = false;
+    let comparisons = 0, swaps = 0;
 
-          const label = document.createElement("div");
-          label.textContent = proc.name;
+    const complexities = {
+      bubble: 'Best O(n) (if optimized), Avg/Worst O(n²)',
+      merge: 'Best/Avg/Worst O(n log n)',
+      quick: 'Best/Avg O(n log n), Worst O(n²)',
+      heap: 'Build O(n), Sort O(n log n)'
+    };
 
-          const bar = document.createElement("div");
-          bar.className = "bar";
+    function randInt(min, max){
+      return Math.floor(Math.random()*(max-min+1))+min;
+    }
 
-          proc.timeline.forEach(char => {
-            const slot = document.createElement("div");
-            slot.classList.add("slot");
-            if (char === '*') slot.classList.add("run");
-            else if (char === '.') slot.classList.add("wait");
-            else slot.classList.add("empty");
-            bar.appendChild(slot);
-          });
+    function resetStats(){
+      comparisons = 0; swaps = 0;
+      cmpEl.textContent = '0';
+      swpEl.textContent = '0';
+      tcxEl.textContent = complexities[document.getElementById('algo').value];
+    }
 
-          row.appendChild(label);
-          row.appendChild(bar);
-          container.appendChild(row);
-        });
+    function updateStats(){
+      cmpEl.textContent = String(comparisons);
+      swpEl.textContent = String(swaps);
+    }
+
+    function genArray(){
+      const n = Number(sizeEl.value);
+      const min = Math.max(1, Number(minValEl.value));
+      const max = Math.max(min+1, Number(maxValEl.value));
+      arr = Array.from({length:n}, ()=>randInt(min, max));
+      aszEl.textContent = String(n);
+      render();
+      resetStats();
+    }
+
+    function render(){
+      viz.innerHTML = '';
+      const n = arr.length;
+      bars = arr.map((h)=>{
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.style.height = `${h}px`;
+        bar.style.width = `${Math.max(2, (viz.clientWidth-32)/Math.max(1,n) - 2)}px`;
+        viz.appendChild(bar);
+        return bar;
       });
+    }
+
+    function mark(i, cls){ if(bars[i]) bars[i].classList.add(cls); }
+    function unmark(i, cls){ if(bars[i]) bars[i].classList.remove(cls); }
+    function setHeight(i, val){ if(bars[i]) { bars[i].style.height = `${val}px`; } }
+
+    function sleep(){
+      const ms = Number(speedEl.value);
+      return new Promise(async (res)=>{
+        const step = ()=> setTimeout(res, ms);
+        const waitPaused = ()=>{
+          if(!paused) step(); else setTimeout(waitPaused, 50);
+        };
+        if(stopFlag) return res();
+        waitPaused();
+      });
+    }
+
+    function lockUI(on){
+      document.getElementById('algo').disabled = on;
+      sizeEl.disabled = on;
+      speedEl.disabled = !on; // allow speed changes while running
+      minValEl.disabled = on; maxValEl.disabled = on;
+      genBtn.disabled = on;
+      startBtn.disabled = on;
+      pauseBtn.disabled = !on;
+      stopBtn.disabled = !on;
+    }
+
+    // ====== Sorting Algorithms (animated) ======
+    async function bubbleSort(){
+      const n = arr.length;
+      let swapped;
+      for(let i=0;i<n-1 && !stopFlag;i++){
+        swapped = false;
+        for(let j=0;j<n-i-1 && !stopFlag;j++){
+          mark(j,'mark-a'); mark(j+1,'mark-b');
+          comparisons++; updateStats();
+          await sleep();
+          if(arr[j] > arr[j+1]){
+            const tmp = arr[j]; arr[j] = arr[j+1]; arr[j+1] = tmp; swaps++; updateStats();
+            setHeight(j, arr[j]); setHeight(j+1, arr[j+1]);
+            swapped = true;
+          }
+          unmark(j,'mark-a'); unmark(j+1,'mark-b');
+        }
+        if(!stopFlag) { bars[n-i-1]?.classList.add('fixed'); }
+        if(!swapped) break; // optimization for best-case
+      }
+      if(!stopFlag){ for(let k=0;k<n;k++) bars[k].classList.add('fixed'); }
+    }
+
+    async function mergeSort(){
+      const n = arr.length;
+      async function merge(l,m,r){
+        let i=l, j=m+1; const tmp=[];
+        while(i<=m && j<=r && !stopFlag){
+          mark(i,'mark-a'); mark(j,'mark-b'); comparisons++; updateStats();
+          await sleep();
+          if(arr[i] <= arr[j]) { tmp.push(arr[i++]); }
+          else { tmp.push(arr[j++]); }
+          unmark(i-1,'mark-a'); unmark(j-1,'mark-b');
+        }
+        while(i<=m && !stopFlag){ tmp.push(arr[i++]); }
+        while(j<=r && !stopFlag){ tmp.push(arr[j++]); }
+        for(let k=l;k<=r && !stopFlag;k++){
+          arr[k]=tmp[k-l]; setHeight(k, arr[k]); swaps++; updateStats();
+          bars[k].classList.add('fixed'); await sleep(); bars[k].classList.remove('fixed');
+        }
+      }
+      async function ms(l,r){
+        if(l>=r || stopFlag) return;
+        const m = Math.floor((l+r)/2);
+        await ms(l,m); await ms(m+1,r); await merge(l,m,r);
+      }
+      await ms(0,n-1);
+      if(!stopFlag){ for(let k=0;k<n;k++) bars[k].classList.add('fixed'); }
+    }
+
+    async function quickSort(){
+      const n = arr.length;
+      async function partition(l,r){
+        const pivot = arr[r]; mark(r,'pivot');
+        let i=l-1;
+        for(let j=l;j<r && !stopFlag;j++){
+          mark(j,'mark-a'); comparisons++; updateStats(); await sleep();
+          if(arr[j] <= pivot){ i++; if(i!==j){ [arr[i],arr[j]]=[arr[j],arr[i]]; swaps++; setHeight(i,arr[i]); setHeight(j,arr[j]); updateStats(); }
+          }
+          unmark(j,'mark-a');
+        }
+        [arr[i+1],arr[r]]=[arr[r],arr[i+1]]; swaps++; updateStats(); setHeight(i+1,arr[i+1]); setHeight(r,arr[r]);
+        unmark(r,'pivot'); bars[i+1].classList.add('fixed');
+        return i+1;
+      }
+      async function qs(l,r){
+        if(l<r && !stopFlag){
+          const p = await partition(l,r);
+          await qs(l,p-1); await qs(p+1,r);
+        }
+      }
+      await qs(0,n-1);
+      if(!stopFlag){ for(let k=0;k<n;k++) bars[k].classList.add('fixed'); }
+    }
+
+    async function heapSort(){
+      const n = arr.length;
+      async function heapify(n,i){
+        let largest = i;
+        const l = 2*i+1, r = 2*i+2;
+        if(l<n){ mark(l,'mark-a'); mark(i,'mark-b'); comparisons++; updateStats(); await sleep(); if(arr[l]>arr[largest]) largest=l; unmark(l,'mark-a'); unmark(i,'mark-b'); }
+        if(r<n){ mark(r,'mark-a'); mark(largest,'mark-b'); comparisons++; updateStats(); await sleep(); if(arr[r]>arr[largest]) largest=r; unmark(r,'mark-a'); unmark(largest,'mark-b'); }
+        if(largest!==i){ [arr[i],arr[largest]]=[arr[largest],arr[i]]; swaps++; updateStats(); setHeight(i,arr[i]); setHeight(largest,arr[largest]); await sleep(); await heapify(n,largest); }
+      }
+      // build max heap
+      for(let i=Math.floor(n/2)-1;i>=0 && !stopFlag;i--){ await heapify(n,i); }
+      // extract elements
+      for(let i=n-1;i>0 && !stopFlag;i--){ [arr[0],arr[i]]=[arr[i],arr[0]]; swaps++; updateStats(); setHeight(0,arr[0]); setHeight(i,arr[i]); bars[i].classList.add('fixed'); await sleep(); await heapify(i,0); }
+      if(!stopFlag){ bars[0]?.classList.add('fixed'); }
+    }
+
+    // ====== Wiring ======
+    function setComplexity(){ tcxEl.textContent = complexities[document.getElementById('algo').value]; }
+
+    sizeEl.addEventListener('input', ()=>{ sizeLbl.textContent = sizeEl.value; aszEl.textContent=sizeEl.value; genArray(); });
+    speedEl.addEventListener('input', ()=>{ speedLbl.textContent = speedEl.value; });
+    document.getElementById('algo').addEventListener('change', setComplexity);
+
+    genBtn.addEventListener('click', genArray);
+
+    startBtn.addEventListener('click', async ()=>{
+      if(running) return;
+      running = true; stopFlag = false; paused = false; lockUI(true); resetStats();
+      const algo = document.getElementById('algo').value;
+      if(algo==='bubble') await bubbleSort();
+      else if(algo==='merge') await mergeSort();
+      else if(algo==='quick') await quickSort();
+      else await heapSort();
+      running = false; paused=false; stopFlag=false; lockUI(false); setComplexity();
+    });
+
+    pauseBtn.addEventListener('click', ()=>{
+      if(!running) return; paused = !paused; pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+    });
+
+    stopBtn.addEventListener('click', ()=>{ if(running){ stopFlag = true; paused = false; }});
+
+    // Init
+    setComplexity();
+    genArray();
+    window.addEventListener('resize', ()=>render());
   </script>
 </body>
 </html>
